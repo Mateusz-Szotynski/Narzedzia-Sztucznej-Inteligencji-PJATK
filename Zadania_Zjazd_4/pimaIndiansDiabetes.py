@@ -20,11 +20,17 @@ Instrukcja użycia:
        python pima_web_basic.py
 """
 
+# biblioteka do pracy z danymi
 import pandas as pd
+# dzieli dane na treningowe i testowe
 from sklearn.model_selection import train_test_split
+# standaryzuje dane do rozkładu o średniej 0 i wariancji 1
 from sklearn.preprocessing import StandardScaler
+# klasyfikator drzewa decyzyjnego
 from sklearn.tree import DecisionTreeClassifier
+# klasyfikacja metodą SVM
 from sklearn.svm import SVC
+# ocena modelu
 from sklearn.metrics import accuracy_score, classification_report
 
 # Nazwy kolumn odpowiadające formatowi Pima Indians Diabetes
@@ -49,36 +55,58 @@ def load_pima_web(csv_path: str):
         - brak nagłówka,
         - 9 kolumn: 8 cech numerycznych + 1 kolumna klasy (0/1).
     """
+    # Wczytanie pliku CSV bez nagłówka i przypisanie własnych nazw kolumn
     df = pd.read_csv(csv_path, header=None, names=COLUMN_NAMES)
+
+    # X – wszystkie kolumny z cechami
     X = df.iloc[:, :-1].values
+
+    # y – ostatnia kolumna z etykietą (0/1, czy osoba ma cukrzycę)
     y = df["Outcome"].values
     return X, y
 
 
 def main():
     # 1. Wczytanie danych ze Zbioru 1
+    # Z wczytanego pliku otrzymujemy:
+    # X – macierz cech (8 kolumn)
+    # y – wektor etykiet (0 lub 1)
     X, y = load_pima_web("pimaIndiansDiabetes.csv")
 
-    # 2. Podział na trening/test + skalowanie (szczególnie ważne dla SVM)
+    # 2. Podział na dane treningowe i testowe + skalowanie
+    # Podział utrzymuje proporcje klasy 0/1 (stratify=y)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X, y,
+        test_size=0.2,      # 20% danych na test
+        random_state=42,
+        stratify=y
     )
+
+    # SVM wymaga skalowania danych — cechy muszą być w podobnych zakresach,
+    # inaczej model działa słabo. Decision Tree nie potrzebuje skalowania,
+    # ale skalujemy raz dla obu modeli, bo nie przeszkadza to drzewu.
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    # 3. Drzewo decyzyjne – uczymy klasyfikować dane
+    # 3. Uczenie modelu: Drzewo Decyzyjne
+    # max_depth=5 – ograniczenie głębokości
     tree = DecisionTreeClassifier(max_depth=5, random_state=42)
-    tree.fit(X_train, y_train)
-    y_tree = tree.predict(X_test)
+    tree.fit(X_train, y_train)            # trening drzewa
+    y_tree = tree.predict(X_test)         # predykcja na danych testowych
+
     print("=== ZBIÓR 1 – Decision Tree ===")
     print("Accuracy:", accuracy_score(y_test, y_tree))
     print(classification_report(y_test, y_tree))
 
-    # 4. SVM – uczymy klasyfikować dane (jeden wariant, np. RBF)
+    # 4. Uczenie modelu: SVM
+    # Używamy najpopularniejszego jądra – RBF.
+    # C = 1.0 – kara za błędy klasyfikacji (standardowo),
+    # gamma = "scale" – automatyczny dobór promienia wpływu punktów.
     svm_clf = SVC(kernel="rbf", C=1.0, gamma="scale", random_state=42)
-    svm_clf.fit(X_train, y_train)
-    y_svm = svm_clf.predict(X_test)
+    svm_clf.fit(X_train, y_train)         # trening SVM
+    y_svm = svm_clf.predict(X_test)       # predykcja
+
     print("=== ZBIÓR 1 – SVM (RBF) ===")
     print("Accuracy:", accuracy_score(y_test, y_svm))
     print(classification_report(y_test, y_svm))
