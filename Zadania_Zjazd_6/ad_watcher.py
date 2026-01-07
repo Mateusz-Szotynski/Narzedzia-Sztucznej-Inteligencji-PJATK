@@ -53,7 +53,7 @@ ALERT_TIME = 5
 # Indeks kamery:
 # 0 – domyślna kamera
 # 1 – alternatywna (często w laptopach)
-CAMERA_INDEX = 1
+CAMERA_INDEX = 0
 
 # ================== MODEL ==================
 
